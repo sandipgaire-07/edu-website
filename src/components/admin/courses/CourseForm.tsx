@@ -45,9 +45,13 @@ const courseSchema = z.object({
 
   preview_video_url: z
     .string()
-    .url("Please enter a valid URL")
-    .optional()
-    .or(z.literal("")),
+    .transform((val) => {
+      let v = val.trim();
+      if (!v) return "";
+      if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
+      return v;
+    })
+    .pipe(z.string().url("Please enter a valid URL").or(z.literal(""))),
 
   price: z.coerce
     .number()
@@ -123,8 +127,13 @@ export default function CourseForm({
   });
 
   useEffect(() => {
-    getCategories().then(setCategories);
-  }, []);
+    getCategories().then((cats) => {
+      setCategories(cats);
+      if (!courseId && cats.length > 0) {
+        setValue("category_id", cats[0].id, { shouldValidate: true });
+      }
+    });
+  }, [courseId, setValue]);
 
   useEffect(() => {
     if (!courseId) return;

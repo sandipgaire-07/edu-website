@@ -76,30 +76,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Try updating course row in DB directly
+    // Try updating course row in DB directly using the actual DB column name
     let dbUpdate = await (supabase.from("courses") as any)
-      .update({ syllabus_pdf_url: pdfUrl, pdf_url: pdfUrl })
+      .update({ curriculum_pdf_url: pdfUrl })  // DB column: curriculum_pdf_url
       .eq("id", courseId)
       .select()
       .single();
-
-    if (dbUpdate.error) {
-      // Retry updating syllabus_pdf_url only
-      dbUpdate = await (supabase.from("courses") as any)
-        .update({ syllabus_pdf_url: pdfUrl })
-        .eq("id", courseId)
-        .select()
-        .single();
-    }
-
-    if (dbUpdate.error) {
-      // Retry updating pdf_url only
-      dbUpdate = await (supabase.from("courses") as any)
-        .update({ pdf_url: pdfUrl })
-        .eq("id", courseId)
-        .select()
-        .single();
-    }
 
 
     if (dbUpdate.error) {

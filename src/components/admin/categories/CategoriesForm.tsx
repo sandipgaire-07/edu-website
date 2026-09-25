@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Folder } from "lucide-react";
 
 import {
   Dialog,
@@ -19,11 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Category } from "@/types/category";
+import { uploadImage } from "@/lib/queries/admin";
 
 const categorySchema = z.object({
   name: z.string().min(2, "Category name must be at least 2 characters"),
   slug: z.string().min(2, "Slug must be at least 2 characters"),
   description: z.string().optional(),
+  image: z.string().optional().nullable(),
   display_order: z.number().min(0, "Display order must be 0 or greater"),
   is_active: z.boolean(),
 });
@@ -44,6 +48,8 @@ export default function CategoryForm({
   onSave,
 }: CategoryFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const {
     register,
@@ -58,6 +64,7 @@ export default function CategoryForm({
       name: "",
       slug: "",
       description: "",
+      image: "",
       display_order: 1,
       is_active: true,
     },
@@ -71,18 +78,23 @@ export default function CategoryForm({
         name: category.name || "",
         slug: category.slug || "",
         description: category.description || "",
+        image: category.image || "",
         display_order: category.display_order ?? 1,
         is_active: category.is_active ?? true,
       });
+      setImagePreview(category.image || null);
     } else {
       reset({
         name: "",
         slug: "",
         description: "",
+        image: "",
         display_order: 1,
         is_active: true,
       });
+      setImagePreview(null);
     }
+    setImageFile(null);
   }, [category, open, reset]);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,11 +111,32 @@ export default function CategoryForm({
     }
   };
 
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const onSubmitForm = async (data: CategoryFormValues) => {
     if (onSave) {
       setIsSubmitting(true);
       try {
-        const success = await onSave(data);
+        let finalImage = imagePreview;
+        if (imageFile) {
+          const uploaded = await uploadImage(imageFile, "categories");
+          if (uploaded) {
+            finalImage = uploaded;
+          }
+        }
+
+        const payload = {
+          ...data,
+          image: finalImage && !finalImage.startsWith("blob:") ? finalImage : data.image || null,
+        };
+
+        const success = await onSave(payload);
         if (success) {
           onOpenChange(false);
         }
@@ -157,6 +190,37 @@ export default function CategoryForm({
             {errors.slug && (
               <p className="text-xs text-red-500">{errors.slug.message}</p>
             )}
+          </div>
+
+          {/* Photo / Image */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-leaf-muted">
+              Category Photo / Image
+            </label>
+            <div className="flex items-center gap-3">
+              {imagePreview ? (
+                <div className="relative size-14 shrink-0 overflow-hidden rounded-md border border-leaf-border">
+                  <Image
+                    src={imagePreview}
+                    alt="Category preview"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="flex size-14 shrink-0 items-center justify-center rounded-md border border-dashed border-leaf-border bg-leaf-bg text-leaf-muted text-xs">
+                  <Folder className="size-5 text-leaf-muted" />
+                </div>
+              )}
+              <div className="flex-1">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageFileChange}
+                  className="h-9 text-xs border-leaf-border file:mr-2 file:h-7 file:rounded file:border-0 file:bg-leaf-soft file:px-2.5 file:text-xs file:font-semibold file:text-leaf-green-dark"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-1.5">

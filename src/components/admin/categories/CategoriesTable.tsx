@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
+  Folder,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -75,6 +77,7 @@ export default function CategoryTable({
         <Table className="border border-leaf-border">
           <TableHeader>
             <TableRow>
+              <TableHead className="w-16">Photo</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Status</TableHead>
@@ -91,6 +94,21 @@ export default function CategoryTable({
                 key={category.id}
                 className="border border-leaf-border"
               >
+                <TableCell>
+                  {category.image ? (
+                    <div className="relative size-10 overflow-hidden rounded-md border border-leaf-border">
+                      <Image
+                        src={category.image}
+                        alt={category.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-leaf-muted text-xs">—</span>
+                  )}
+                </TableCell>
+
                 <TableCell className="font-medium text-leaf-navy">
                   {category.name}
                 </TableCell>

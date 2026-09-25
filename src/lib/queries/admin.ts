@@ -92,6 +92,22 @@ export async function getAdminDashboardStats(): Promise<AdminStats> {
   }
 }
 
+/** Maps actual DB column names → UI field names used by the admin form. */
+function normalizeDbCourse(item: any): any {
+  if (!item) return item;
+  return {
+    ...item,
+    // DB column "name" → form field "title"
+    title: item.title ?? item.name ?? "",
+    // DB column "actual_price" → form field "price"
+    price: item.price ?? item.actual_price ?? 0,
+    // DB column "is_featured" → form field "featured"
+    featured: item.featured ?? item.is_featured ?? false,
+    // DB column "curriculum_pdf_url" → form field "syllabus_pdf_url"
+    syllabus_pdf_url: item.syllabus_pdf_url ?? item.curriculum_pdf_url ?? null,
+  };
+}
+
 /**
  * Fetch all courses for Admin Table
  */
@@ -118,7 +134,7 @@ export async function getAdminCourses(): Promise<AdminCourseItem[]> {
     }
 
     return courses.map((item: any) => ({
-      ...item,
+      ...normalizeDbCourse(item),
       category_name: item.category_id ? (categoryMap.get(item.category_id) || "Uncategorized") : "Uncategorized",
     }));
   } catch (err) {
@@ -163,7 +179,7 @@ export async function getCourseById(courseId: string): Promise<AdminCourseItem |
       return null;
     }
   }
-  return courseObj as AdminCourseItem;
+  return normalizeDbCourse(courseObj) as AdminCourseItem;
 }
 
 /**
